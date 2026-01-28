@@ -2,176 +2,224 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>DEFIY — Défis & Jeux</title>
+<title>Realtime Persona Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Vérification HTTPS -->
+<script>
+if(location.protocol!=="https:"){
+alert("Cette plateforme nécessite HTTPS pour activer la caméra et la sécurité des données.");
+}
+</script>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
 <style>
-body{margin:0;font-family:sans-serif;background:#0b0b0b;color:#fff}
-header{padding:25px;text-align:center;background:#111}
-h1{color:#00ff99}
-nav button{margin:5px;padding:12px 20px;border-radius:30px;border:none;font-weight:bold}
-.green{background:#00ff99;color:#000}
-.card{background:#161616;border-radius:20px;padding:20px;margin:15px auto;max-width:380px}
-input{padding:10px;border-radius:10px;border:none;width:90%;margin:5px}
-.hidden{display:none}
-.progress{background:#333;border-radius:10px;overflow:hidden}
-.bar{height:12px;background:#00ff99;width:0%}
-.badge{background:#00ff99;color:black;padding:5px 10px;border-radius:10px;font-size:12px}
+:root{
+--bg:#0d0d0d;
+--panel:#1b1b2e;
+--neon:#00bfff;
+--accent:#6cf2c2;
+}
+body{margin:0;font-family:Inter,Arial;background:var(--bg);color:#fff}
+header{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at top,#0b2b50,#04060b)}
+h1{font-size:4rem;color:var(--neon)}
+section{padding:80px 5vw}
+button{background:linear-gradient(135deg,var(--neon),var(--accent));border:none;padding:12px 24px;border-radius:12px;font-weight:700;cursor:pointer}
+button:hover{transform:scale(1.05)}
+.card{background:var(--panel);padding:20px;border-radius:18px;box-shadow:0 0 40px #00bfff22}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.studio{display:flex;flex-wrap:wrap;gap:20px}
+video,canvas{width:480px;height:360px;border-radius:20px;background:#000}
+.lock{filter:blur(3px);pointer-events:none}
+select{padding:10px 14px;border-radius:10px;margin-top:10px;background:var(--panel);color:#fff}
+#celebs-list{max-height:300px;overflow-y:scroll;border:1px solid var(--neon);padding:10px;border-radius:10px;}
 </style>
 </head>
+
 <body>
 
 <header>
-<h1>🔥 DEFIY</h1>
-<p id="topText">Défie tes potes. Gagne des jetons.</p>
-<nav>
-<button class="green" onclick="show('login')">Connexion</button>
-<button class="green" onclick="show('register')">Inscription</button>
-<button class="green" onclick="logout()">Déconnexion</button>
-</nav>
+<h1>Realtime Persona Studio</h1>
+<p>Remplace-toi par une IA en direct. Caméra. Voix. Mouvements. Célébrités.</p>
+<input id="email" placeholder="Email">
+<button onclick="login()">Connexion</button>
+<p id="status">En attente</p>
+<button onclick="startCamera()">Activer la caméra</button>
 </header>
 
-<!-- AUTH -->
-<div id="login" class="card hidden">
-<h2>Connexion</h2>
-<input id="loginEmail" placeholder="Email">
-<input id="loginPass" type="password" placeholder="Mot de passe">
-<button class="green" onclick="login()">Go</button>
+<section>
+<h2>Studio Temps Réel</h2>
+<div class="studio">
+<video id="video" autoplay muted playsinline></video>
+<canvas id="avatar" width="480" height="360"></canvas>
 </div>
+<h3>Choisir votre célébrité :</h3>
+<div id="celebs-list"></div>
+</section>
 
-<div id="register" class="card hidden">
-<h2>Inscription</h2>
-<input id="regPseudo" placeholder="Pseudo">
-<input id="regEmail" placeholder="Email">
-<input id="regPass" type="password" placeholder="Mot de passe">
-<button class="green" onclick="register()">Créer</button>
+<section>
+<h2>Fonctionnalités intelligentes</h2>
+<div class="grid">
+<div class="card">🎥 Détection visage automatique</div>
+<div class="card">🧍 Détection posture & gestes</div>
+<div class="card">🔁 Remplacement IA instantané</div>
+<div class="card">🗣️ Voix synchronisée naturelle</div>
+<div class="card">🤖 Chatbot OFM intégré</div>
+<div class="card">📊 Analytics & recommandations</div>
+<div class="card">🖼 Galerie images et animations</div>
 </div>
+</section>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="hidden">
-
-<div class="card">
-<h2>🪙 Jetons</h2>
-<p><b><span id="tokens">0</span></b> jetons</p>
-<p>Reset dans <span id="timer">--:--:--</span></p>
+<section>
+<h2>Abonnements</h2>
+<div class="grid">
+<div class="card">Gratuit – Démo + outils limités</div>
+<div class="card">Starter – 10€</div>
+<div class="card">Creator – 20€</div>
+<div class="card">Pro OFM – 35€</div>
+<div class="card">Elite – 50€</div>
+<div class="card">Agency – 75€</div>
+<div class="card">VIP – 100€</div>
 </div>
+<button onclick="pay('paypal')">PayPal</button>
+<button onclick="pay('revolut')">Revolut</button>
+</section>
 
-<div class="card">
-<h2>🏆 Défis</h2>
-<button class="green" onclick="newChallenge()">Créer un défi (-1)</button>
-<ul id="challenges"></ul>
-</div>
-
-<div class="card">
-<h2>🎮 Jeux</h2>
-<button class="green" onclick="clickGame()">Click Game</button>
-<button class="green" onclick="spin()">🎰 Roue</button>
-<p id="gameInfo"></p>
-</div>
-
-<div class="card">
-<h2>👤 Profil</h2>
-<p>Pseudo : <span id="pseudo"></span></p>
-<p>Niveau : <span id="level">1</span></p>
-<div class="progress"><div class="bar" id="xpBar"></div></div>
-<p><span class="badge" id="badge">Débutant</span></p>
-</div>
-
-<div class="card">
-<h2>🛒 Boutique</h2>
-<button class="green" onclick="buy(50)">50 jetons</button>
-<button class="green" onclick="buy(200)">200 jetons</button>
-<button class="green" onclick="premium()">⭐ Premium</button>
-<p style="font-size:12px;opacity:.6">Paiement simulé</p>
-</div>
-
-</div>
+<section>
+<h2>Chatbot IA / FAQ</h2>
+<input id="q" placeholder="Pose ta question...">
+<button onclick="chat()">Envoyer</button>
+<p id="a"></p>
+</section>
 
 <script>
-let user = JSON.parse(localStorage.getItem("user"));
-let tokens = Number(localStorage.getItem("tokens")) || 5;
-let xp = Number(localStorage.getItem("xp")) || 0;
-let level = Number(localStorage.getItem("level")) || 1;
-let last = Number(localStorage.getItem("last")) || Date.now();
-let challenges = JSON.parse(localStorage.getItem("challenges")) || [];
+// ---------------- UTILISATEUR ----------------
+const VIP_EMAILS=[
+"srbastien.bonafos555@gmail.com",
+"fourtierjohn04@icloud.com"
+];
+let user={email:"",plan:"free",paid:false};
+let selectedCelebrity="";
 
-function show(id){
-document.querySelectorAll('.card').forEach(e=>e.classList.add('hidden'));
-document.getElementById(id).classList.remove('hidden');
-}
-
-function register(){
-user={pseudo:regPseudo.value,email:regEmail.value};
-localStorage.setItem("user",JSON.stringify(user));
-login();
-}
-
+// ---------------- LOGIN ----------------
 function login(){
-if(!user)return alert("Compte introuvable");
-document.getElementById("dashboard").classList.remove("hidden");
-pseudo.innerText=user.pseudo;
+user.email=document.getElementById("email").value;
+if(VIP_EMAILS.includes(user.email)){
+user.plan="VIP";
+user.paid=true;
+alert("Compte VIP activé !");
+}else{
+user.plan="free";
+user.paid=false;
+alert("Compte gratuit activé !");
+}
+updateStatus();
+}
+function updateStatus(){
+document.getElementById("status").textContent="Email: "+user.email+" | Plan: "+user.plan;
 }
 
-function logout(){localStorage.clear();location.reload();}
+// ---------------- CAMÉRA ----------------
+const video=document.getElementById("video");
+const canvas=document.getElementById("avatar");
+const ctx=canvas.getContext("2d");
 
-function newChallenge(){
-if(tokens<=0)return alert("Plus de jetons");
-tokens--;
-challenges.push("Défi #"+(challenges.length+1));
-window.open("https://forms.gle/9FCERFqSMgXZnyeq8","_blank");
-save();
-renderChallenges();
+async function startCamera(){
+if(!user.paid && user.plan==="free"){
+alert("Fonctionnalité complète réservée aux abonnés payants");
+return;
+}
+try{
+const stream=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720},audio:true});
+video.srcObject=stream;
+document.getElementById("status").textContent="Caméra active – IA en cours";
+initAI();
+}catch(err){
+alert("Erreur caméra : HTTPS + autorisation requise");
+}
 }
 
-function renderChallenges(){
-challengesEl=document.getElementById("challenges");
-challengesEl.innerHTML="";
-challenges.forEach(c=>{
-let li=document.createElement("li");
-li.innerText=c;
-challengesEl.appendChild(li);
+// ---------------- IA VISUELLE ----------------
+function initAI(){
+const face=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+face.setOptions({maxNumFaces:1,refineLandmarks:true});
+face.onResults(r=>{
+if(r.multiFaceLandmarks.length>0){
+drawAvatar();
+}
 });
+
+const pose=new Pose({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+pose.onResults(()=>{});
+
+const cam=new Camera(video,{onFrame:async()=>{
+await face.send({image:video});
+await pose.send({image:video});
+},width:480,height:360});
+cam.start();
 }
 
-function clickGame(){
-xp+=10;tokens++;
-gameInfo.innerText="+1 jeton | +10 XP";
-updateLevel();save();
+function drawAvatar(){
+ctx.clearRect(0,0,480,360);
+ctx.fillStyle="#00bfff";
+ctx.fillRect(160,40,160,280);
+ctx.fillStyle="#fff";
+ctx.font="18px Arial";
+ctx.fillText("AVATAR IA ACTIF",130,30);
+ctx.fillText("Célébrité: "+selectedCelebrity,120,360);
 }
 
-function spin(){
-let gain=Math.floor(Math.random()*5);
-tokens+=gain;
-gameInfo.innerText="🎰 +"+gain+" jetons";
-save();
+// ---------------- VOIX ----------------
+const rec=new (window.SpeechRecognition||webkitSpeechRecognition)();
+rec.lang="fr-FR";
+rec.continuous=true;
+rec.onresult=e=>{
+const text=e.results[e.results.length-1][0].transcript;
+speak(text);
+};
+rec.start();
+function speak(text){
+const u=new SpeechSynthesisUtterance(text);
+u.rate=1;u.pitch=1;
+speechSynthesis.speak(u);
 }
 
-function buy(n){tokens+=n;alert("Jetons ajoutés");save();}
-function premium(){alert("Premium activé (fake)");}
-
-function updateLevel(){
-if(xp>=level*100){xp=0;level++;}
-xpBar.style.width=(xp/(level*100)*100)+"%";
-badge.innerText=level>5?"Pro":"Débutant";
+// ---------------- PAIEMENT ----------------
+function pay(type){
+if(type==="paypal") location.href="https://www.paypal.com/paypalme/SebastienBonafos";
+if(type==="revolut") location.href="https://revolut.me/jfia7107";
 }
 
-function save(){
-localStorage.setItem("tokens",tokens);
-localStorage.setItem("xp",xp);
-localStorage.setItem("level",level);
-localStorage.setItem("last",last);
-localStorage.setItem("challenges",JSON.stringify(challenges));
-tokensEl.innerText=tokens;
+// ---------------- CHATBOT ----------------
+function chat(){
+const q=document.getElementById("q").value.toLowerCase();
+const a=document.getElementById("a");
+if(q.includes("caméra"))a.textContent="La caméra s’active uniquement en HTTPS.";
+else if(q.includes("avatar"))a.textContent="L’avatar se déclenche dès détection visage.";
+else if(q.includes("paiement"))a.textContent="PayPal et Revolut sont disponibles.";
+else a.textContent="Un agent IA vous répondra bientôt.";
 }
 
-setInterval(()=>{
-let diff=86400000-(Date.now()-last);
-if(diff<=0){tokens=5;last=Date.now();}
-timer.innerText=new Date(diff).toISOString().substr(11,8);
-save();
-},1000);
-
-if(user)login();
-renderChallenges();
+// ---------------- 250 CÉLÉBRITÉS ----------------
+const celebs=[];
+for(let i=1;i<=250;i++){celebs.push("Célébrité "+i);}
+const celebContainer=document.getElementById("celebs-list");
+celebs.forEach(c=>{
+  const label=document.createElement("label");
+  label.style.display="block";
+  const checkbox=document.createElement("input");
+  checkbox.type="radio"; // une seule sélection
+  checkbox.name="celebrity";
+  checkbox.value=c;
+  checkbox.onchange=()=>{selectedCelebrity=c; drawAvatar();}
+  label.appendChild(checkbox);
+  label.appendChild(document.createTextNode(" "+c));
+  celebContainer.appendChild(label);
+});
 </script>
 
 </body>
