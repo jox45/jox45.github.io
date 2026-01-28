@@ -1,100 +1,105 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Défis entre potes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
-      color: white;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      padding: 60px 20px;
-      background: #111;
-    }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 10px;
-    }
-    p {
-      font-size: 1.2em;
-      opacity: 0.9;
-    }
-    .btn {
-      display: inline-block;
-      padding: 20px 40px;
-      margin-top: 30px;
-      background: #00ff88;
-      color: black;
-      font-weight: bold;
-      text-decoration: none;
-      border-radius: 30px;
-      font-size: 20px;
-      transition: transform 0.2s;
-    }
-    .btn:hover {
-      transform: scale(1.1);
-    }
-    .section {
-      padding: 50px 20px;
-      max-width: 900px;
-      margin: auto;
-    }
-    .card {
-      background: #1a1a1a;
-      margin: 20px auto;
-      padding: 25px;
-      border-radius: 20px;
-      max-width: 400px;
-    }
-    .card h2 {
-      margin-top: 0;
-      color: #00ff88;
-    }
-    footer {
-      padding: 30px 20px;
-      background: #111;
-      margin-top: 40px;
-      font-size: 0.9em;
-      opacity: 0.7;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Défis entre potes - Jetons</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body, html { margin:0; padding:0; font-family: 'Roboto', sans-serif; background:#0f0f0f; color:white; text-align:center;}
+  header {padding:50px 20px; background:#111;}
+  h1 {font-size:3em; color:#00ff88;}
+  p {font-size:1.2em; opacity:0.9;}
+  .btn {display:inline-block; padding:20px 40px; background:#00ff88; color:black; font-weight:bold; border-radius:30px; font-size:20px; margin-top:20px; transition: transform 0.2s;}
+  .btn:hover {transform:scale(1.1);}
+  .tokens {margin-top:30px; font-size:1.5em;}
+  .countdown {margin-top:10px; font-size:1.2em; opacity:0.8;}
+</style>
 </head>
 <body>
 
 <header>
   <h1>🔥 Défis entre potes</h1>
-  <p>Crée un défi, invite tes amis et tiens bon jusqu’au bout !</p>
-  <a class="btn" href="https://forms.gle/9FCERFqSMgXZnyeq8" target="_blank">➕ Créer un défi</a>
+  <p>Utilise tes jetons pour créer un défi chaque jour !</p>
+  <button class="btn" id="createChallenge">➕ Créer un défi</button>
+  <div class="tokens">Jetons restants : <span id="tokens">5</span></div>
+  <div class="countdown">Nouveaux jetons dans : <span id="timer">24:00:00</span></div>
 </header>
 
-<div class="section">
-  <div class="card">
-    <h2>👥 Jouez ensemble</h2>
-    <p>Invitez vos amis et défiez-vous pour rester motivés. Chaque participant peut remplir le formulaire pour rejoindre le défi.</p>
-  </div>
-  <div class="card">
-    <h2>⏱️ Suivez vos objectifs</h2>
-    <p>Chaque défi a une durée et un objectif clair pour que vous puissiez mesurer vos progrès facilement.</p>
-  </div>
-  <div class="card">
-    <h2>🏆 Classement et badges</h2>
-    <p>Les meilleurs challengers peuvent gagner des badges et des points. Les résultats peuvent être affichés plus tard sur le site.</p>
-  </div>
-  <div class="card">
-    <h2>💎 Premium bientôt</h2>
-    <p>Fonctionnalités avancées comme le suivi automatique, plus de défis et récompenses seront disponibles bientôt.</p>
-  </div>
-</div>
+<script>
+  // --- INITIALISATION ---
+  const maxTokens = 5;
+  const tokenResetTime = 24*60*60*1000; // 24h en ms
+  let tokens = localStorage.getItem('tokens');
+  let lastReset = localStorage.getItem('lastReset');
 
-<footer>
-  © 2026 Défis entre potes • Créez vos propres challenges et partagez-les entre amis
-</footer>
+  if(!tokens) tokens = maxTokens;
+  if(!lastReset) lastReset = new Date().getTime();
+
+  tokens = parseInt(tokens);
+  lastReset = parseInt(lastReset);
+
+  const tokensSpan = document.getElementById('tokens');
+  const timerSpan = document.getElementById('timer');
+  const button = document.getElementById('createChallenge');
+
+  function updateUI(){
+    tokensSpan.textContent = tokens;
+    if(tokens <=0) {
+      button.disabled = true;
+      button.style.opacity = 0.5;
+    } else {
+      button.disabled = false;
+      button.style.opacity = 1;
+    }
+  }
+
+  function formatTime(ms){
+    const totalSeconds = Math.floor(ms/1000);
+    const h = String(Math.floor(totalSeconds/3600)).padStart(2,'0');
+    const m = String(Math.floor((totalSeconds%3600)/60)).padStart(2,'0');
+    const s = String(totalSeconds%60).padStart(2,'0');
+    return `${h}:${m}:${s}`;
+  }
+
+  function checkReset(){
+    const now = new Date().getTime();
+    if(now - lastReset >= tokenResetTime){
+      tokens = maxTokens;
+      lastReset = now;
+      localStorage.setItem('tokens', tokens);
+      localStorage.setItem('lastReset', lastReset);
+    }
+  }
+
+  function updateCountdown(){
+    const now = new Date().getTime();
+    let diff = tokenResetTime - (now - lastReset);
+    if(diff<0) diff =0;
+    timerSpan.textContent = formatTime(diff);
+  }
+
+  button.addEventListener('click', ()=>{
+    if(tokens>0){
+      tokens--;
+      localStorage.setItem('tokens', tokens);
+      // Ouvre le Google Form
+      window.open('https://forms.gle/9FCERFqSMgXZnyeq8', '_blank');
+      updateUI();
+    }
+  });
+
+  // --- LOOP ---
+  setInterval(()=>{
+    checkReset();
+    updateUI();
+    updateCountdown();
+  },1000);
+
+  // initial UI update
+  updateUI();
+  updateCountdown();
+
+</script>
 
 </body>
 </html>
