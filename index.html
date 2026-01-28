@@ -2,103 +2,176 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Défis entre potes - Jetons</title>
+<title>DEFIY — Défis & Jeux</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body, html { margin:0; padding:0; font-family: 'Roboto', sans-serif; background:#0f0f0f; color:white; text-align:center;}
-  header {padding:50px 20px; background:#111;}
-  h1 {font-size:3em; color:#00ff88;}
-  p {font-size:1.2em; opacity:0.9;}
-  .btn {display:inline-block; padding:20px 40px; background:#00ff88; color:black; font-weight:bold; border-radius:30px; font-size:20px; margin-top:20px; transition: transform 0.2s;}
-  .btn:hover {transform:scale(1.1);}
-  .tokens {margin-top:30px; font-size:1.5em;}
-  .countdown {margin-top:10px; font-size:1.2em; opacity:0.8;}
+body{margin:0;font-family:sans-serif;background:#0b0b0b;color:#fff}
+header{padding:25px;text-align:center;background:#111}
+h1{color:#00ff99}
+nav button{margin:5px;padding:12px 20px;border-radius:30px;border:none;font-weight:bold}
+.green{background:#00ff99;color:#000}
+.card{background:#161616;border-radius:20px;padding:20px;margin:15px auto;max-width:380px}
+input{padding:10px;border-radius:10px;border:none;width:90%;margin:5px}
+.hidden{display:none}
+.progress{background:#333;border-radius:10px;overflow:hidden}
+.bar{height:12px;background:#00ff99;width:0%}
+.badge{background:#00ff99;color:black;padding:5px 10px;border-radius:10px;font-size:12px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🔥 Défis entre potes</h1>
-  <p>Utilise tes jetons pour créer un défi chaque jour !</p>
-  <button class="btn" id="createChallenge">➕ Créer un défi</button>
-  <div class="tokens">Jetons restants : <span id="tokens">5</span></div>
-  <div class="countdown">Nouveaux jetons dans : <span id="timer">24:00:00</span></div>
+<h1>🔥 DEFIY</h1>
+<p id="topText">Défie tes potes. Gagne des jetons.</p>
+<nav>
+<button class="green" onclick="show('login')">Connexion</button>
+<button class="green" onclick="show('register')">Inscription</button>
+<button class="green" onclick="logout()">Déconnexion</button>
+</nav>
 </header>
 
+<!-- AUTH -->
+<div id="login" class="card hidden">
+<h2>Connexion</h2>
+<input id="loginEmail" placeholder="Email">
+<input id="loginPass" type="password" placeholder="Mot de passe">
+<button class="green" onclick="login()">Go</button>
+</div>
+
+<div id="register" class="card hidden">
+<h2>Inscription</h2>
+<input id="regPseudo" placeholder="Pseudo">
+<input id="regEmail" placeholder="Email">
+<input id="regPass" type="password" placeholder="Mot de passe">
+<button class="green" onclick="register()">Créer</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+
+<div class="card">
+<h2>🪙 Jetons</h2>
+<p><b><span id="tokens">0</span></b> jetons</p>
+<p>Reset dans <span id="timer">--:--:--</span></p>
+</div>
+
+<div class="card">
+<h2>🏆 Défis</h2>
+<button class="green" onclick="newChallenge()">Créer un défi (-1)</button>
+<ul id="challenges"></ul>
+</div>
+
+<div class="card">
+<h2>🎮 Jeux</h2>
+<button class="green" onclick="clickGame()">Click Game</button>
+<button class="green" onclick="spin()">🎰 Roue</button>
+<p id="gameInfo"></p>
+</div>
+
+<div class="card">
+<h2>👤 Profil</h2>
+<p>Pseudo : <span id="pseudo"></span></p>
+<p>Niveau : <span id="level">1</span></p>
+<div class="progress"><div class="bar" id="xpBar"></div></div>
+<p><span class="badge" id="badge">Débutant</span></p>
+</div>
+
+<div class="card">
+<h2>🛒 Boutique</h2>
+<button class="green" onclick="buy(50)">50 jetons</button>
+<button class="green" onclick="buy(200)">200 jetons</button>
+<button class="green" onclick="premium()">⭐ Premium</button>
+<p style="font-size:12px;opacity:.6">Paiement simulé</p>
+</div>
+
+</div>
+
 <script>
-  // --- INITIALISATION ---
-  const maxTokens = 5;
-  const tokenResetTime = 24*60*60*1000; // 24h en ms
-  let tokens = localStorage.getItem('tokens');
-  let lastReset = localStorage.getItem('lastReset');
+let user = JSON.parse(localStorage.getItem("user"));
+let tokens = Number(localStorage.getItem("tokens")) || 5;
+let xp = Number(localStorage.getItem("xp")) || 0;
+let level = Number(localStorage.getItem("level")) || 1;
+let last = Number(localStorage.getItem("last")) || Date.now();
+let challenges = JSON.parse(localStorage.getItem("challenges")) || [];
 
-  if(!tokens) tokens = maxTokens;
-  if(!lastReset) lastReset = new Date().getTime();
+function show(id){
+document.querySelectorAll('.card').forEach(e=>e.classList.add('hidden'));
+document.getElementById(id).classList.remove('hidden');
+}
 
-  tokens = parseInt(tokens);
-  lastReset = parseInt(lastReset);
+function register(){
+user={pseudo:regPseudo.value,email:regEmail.value};
+localStorage.setItem("user",JSON.stringify(user));
+login();
+}
 
-  const tokensSpan = document.getElementById('tokens');
-  const timerSpan = document.getElementById('timer');
-  const button = document.getElementById('createChallenge');
+function login(){
+if(!user)return alert("Compte introuvable");
+document.getElementById("dashboard").classList.remove("hidden");
+pseudo.innerText=user.pseudo;
+}
 
-  function updateUI(){
-    tokensSpan.textContent = tokens;
-    if(tokens <=0) {
-      button.disabled = true;
-      button.style.opacity = 0.5;
-    } else {
-      button.disabled = false;
-      button.style.opacity = 1;
-    }
-  }
+function logout(){localStorage.clear();location.reload();}
 
-  function formatTime(ms){
-    const totalSeconds = Math.floor(ms/1000);
-    const h = String(Math.floor(totalSeconds/3600)).padStart(2,'0');
-    const m = String(Math.floor((totalSeconds%3600)/60)).padStart(2,'0');
-    const s = String(totalSeconds%60).padStart(2,'0');
-    return `${h}:${m}:${s}`;
-  }
+function newChallenge(){
+if(tokens<=0)return alert("Plus de jetons");
+tokens--;
+challenges.push("Défi #"+(challenges.length+1));
+window.open("https://forms.gle/9FCERFqSMgXZnyeq8","_blank");
+save();
+renderChallenges();
+}
 
-  function checkReset(){
-    const now = new Date().getTime();
-    if(now - lastReset >= tokenResetTime){
-      tokens = maxTokens;
-      lastReset = now;
-      localStorage.setItem('tokens', tokens);
-      localStorage.setItem('lastReset', lastReset);
-    }
-  }
+function renderChallenges(){
+challengesEl=document.getElementById("challenges");
+challengesEl.innerHTML="";
+challenges.forEach(c=>{
+let li=document.createElement("li");
+li.innerText=c;
+challengesEl.appendChild(li);
+});
+}
 
-  function updateCountdown(){
-    const now = new Date().getTime();
-    let diff = tokenResetTime - (now - lastReset);
-    if(diff<0) diff =0;
-    timerSpan.textContent = formatTime(diff);
-  }
+function clickGame(){
+xp+=10;tokens++;
+gameInfo.innerText="+1 jeton | +10 XP";
+updateLevel();save();
+}
 
-  button.addEventListener('click', ()=>{
-    if(tokens>0){
-      tokens--;
-      localStorage.setItem('tokens', tokens);
-      // Ouvre le Google Form
-      window.open('https://forms.gle/9FCERFqSMgXZnyeq8', '_blank');
-      updateUI();
-    }
-  });
+function spin(){
+let gain=Math.floor(Math.random()*5);
+tokens+=gain;
+gameInfo.innerText="🎰 +"+gain+" jetons";
+save();
+}
 
-  // --- LOOP ---
-  setInterval(()=>{
-    checkReset();
-    updateUI();
-    updateCountdown();
-  },1000);
+function buy(n){tokens+=n;alert("Jetons ajoutés");save();}
+function premium(){alert("Premium activé (fake)");}
 
-  // initial UI update
-  updateUI();
-  updateCountdown();
+function updateLevel(){
+if(xp>=level*100){xp=0;level++;}
+xpBar.style.width=(xp/(level*100)*100)+"%";
+badge.innerText=level>5?"Pro":"Débutant";
+}
 
+function save(){
+localStorage.setItem("tokens",tokens);
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+localStorage.setItem("last",last);
+localStorage.setItem("challenges",JSON.stringify(challenges));
+tokensEl.innerText=tokens;
+}
+
+setInterval(()=>{
+let diff=86400000-(Date.now()-last);
+if(diff<=0){tokens=5;last=Date.now();}
+timer.innerText=new Date(diff).toISOString().substr(11,8);
+save();
+},1000);
+
+if(user)login();
+renderChallenges();
 </script>
 
 </body>
